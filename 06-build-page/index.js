@@ -149,7 +149,7 @@ function createIndex() {
                     let i = 0;
 
                     while (i < templateArr.length) {
-                      if (!configObject.hasOwnProperty(templateArr[i])) {
+                      if (!Object.hasOwn(configObject, templateArr[i])) {
                         resultHTML += templateArr[i];
                         i += 1;
                         continue;
