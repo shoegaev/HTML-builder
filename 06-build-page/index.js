@@ -118,87 +118,59 @@ function createIndex() {
         }
 
         let configObject = {};
-        for (let component of components) {
-          // имя компонента (без расширения)
-          let propertyKey = component.name.split('.html')[0];
-          configObject[propertyKey] = '';
-        }
+        let numberOfComponent = 0;
 
-        fs.readFile(
-          path.resolve('06-build-page', 'components', 'articles.html'),
-          (err, data) => {
-            if (err) {
-              throw err;
-            }
-            configObject.articles = data.toString('utf8');
-            fs.readFile(
-              path.resolve('06-build-page', 'components', 'footer.html'),
-              (err, data) => {
-                if (err) {
-                  throw err;
-                }
-                configObject.footer = data.toString('utf8');
+        function recursiveReadFile(numberOfComponent) {
+          fs.readFile(
+            path.resolve(
+              '06-build-page',
+              'components',
+              components[numberOfComponent].name,
+            ),
+            (err, data) => {
+              if (err) {
+                throw err;
+              }
+              const propertyKey =
+                components[numberOfComponent].name.split('.html')[0];
+              configObject[propertyKey] = data.toString('utf8');
+              if (!(numberOfComponent === components.length - 1)) {
+                recursiveReadFile(numberOfComponent + 1);
+              } else {
                 fs.readFile(
-                  path.resolve('06-build-page', 'components', 'header.html'),
+                  path.resolve('06-build-page', 'template.html'),
                   (err, data) => {
                     if (err) {
                       throw err;
                     }
-                    configObject.header = data.toString('utf8');
-                    // составление итогового HTML кода
-                    fs.readFile(
-                      path.resolve('06-build-page', 'template.html'),
-                      (err, data) => {
-                        if (err) {
-                          throw err;
-                        }
-                        const templateHTML = data.toString('utf8');
-                        const templateArr = templateHTML.split('{{');
-                        let resultHTML = '';
-                        let i = 0;
-                        console.log(configObject);
-                        while (i < templateArr.length) {
-                          if (
-                            !(
-                              templateArr[i].includes('header}}') ||
-                              templateArr[i].includes('articles}}') ||
-                              templateArr[i].includes('footer}}')
-                            )
-                          ) {
-                            resultHTML += templateArr[i];
-                            i += 1;
-                            continue;
-                          }
-                          const componentName = templateArr[i].split('}}')[0];
-                          if (componentName === 'header') {
-                            resultHTML +=
-                              configObject.header +
-                              templateArr[i].split('}}')[1];
-                          } else if (componentName === 'articles') {
-                            resultHTML +=
-                              configObject.articles +
-                              templateArr[i].split('}}')[1];
-                          } else if (componentName === 'footer') {
-                            resultHTML +=
-                              configObject.footer +
-                              templateArr[i].split('}}')[1];
-                          }
-                          i += 1;
-                        }
-                        // запись получившегося кода в файл
-                        fs.writeFile(indexPath, resultHTML, (err) => {
-                          if (err) {
-                            throw err;
-                          }
-                        });
-                      },
-                    );
+                    const templateHTML = data.toString('utf8');
+                    const templateArr = templateHTML.split(/{{|}}/);
+                    let resultHTML = '';
+                    let i = 0;
+
+                    while (i < templateArr.length) {
+                      if (!configObject.hasOwnProperty(templateArr[i])) {
+                        resultHTML += templateArr[i];
+                        i += 1;
+                        continue;
+                      }
+                      resultHTML += configObject[templateArr[i]];
+                      i += 1;
+                    }
+                    // запись получившегося кода в файл
+                    fs.writeFile(indexPath, resultHTML, (err) => {
+                      if (err) {
+                        throw err;
+                      }
+                    });
                   },
                 );
-              },
-            );
-          },
-        );
+              }
+              return;
+            },
+          );
+        }
+        recursiveReadFile(numberOfComponent);
       },
     );
   });
